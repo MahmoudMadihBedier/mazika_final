@@ -1,0 +1,29 @@
+{
+  "assets": {},
+  "config": {
+    "build_asset_types": [
+      "code_assets/code"
+    ],
+    "extensions": {
+      "code_assets": {
+        "android": {
+          "target_ndk_api": 24
+        },
+        "c_compiler": {
+          "ar": "/home/madih/Android/Sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar",
+          "cc": "/home/madih/Android/Sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/clang",
+          "ld": "/home/madih/Android/Sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/ld.lld"
+        },
+        "link_mode_preference": "dynamic",
+        "target_architecture": "arm64",
+        "target_os": "android"
+      }
+    },
+    "linking_enabled": false
+  },
+  "out_dir_shared": "/home/madih/projcets/mobile_app/mazika_mazj_complete/mazika_final/.dart_tool/hooks_runner/shared/objective_c/build/",
+  "out_file": "/home/madih/projcets/mobile_app/mazika_mazj_complete/mazika_final/.dart_tool/hooks_runner/objective_c/5a0f40c15d5d5832424045126ff597e1/output.json",
+  "package_name": "objective_c",
+  "package_root": "/home/madih/.pub-cache/hosted/pub.dev/objective_c-9.3.0/",
+  "user_defines": {}
+}

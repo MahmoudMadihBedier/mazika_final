@@ -6,7 +6,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:logger/logger.dart';
 
 import '../models/context_model.dart';
-import '../models/listening_history_model.dart';
+import '../models/listening_history_model.dart' as history;
 
 class SensorService {
   final Logger _logger = Logger();
@@ -17,7 +17,7 @@ class SensorService {
 
   double _accelMagnitude = 9.8; // ~gravity
   double _gpsSpeed = 0;
-  MoodType? _manualMoodOverride;
+  history.MoodType? _manualMoodOverride;
 
   Future<void> start() async {
     await _requestPermissions();
@@ -29,7 +29,10 @@ class SensorService {
 
   Future<void> _requestPermissions() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
-    if (!enabled) { _logger.w('Location not enabled'); return; }
+    if (!enabled) {
+      _logger.w('Location not enabled');
+      return;
+    }
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -38,65 +41,77 @@ class SensorService {
 
   void _startAccelerometer() {
     final samples = <double>[];
-    _accelSub = accelerometerEventStream(
-      samplingPeriod: SensorInterval.normalInterval,
-    ).listen((e) {
-      final mag = sqrt(e.x * e.x + e.y * e.y + e.z * e.z);
-      samples.add(mag);
-      if (samples.length > 20) samples.removeAt(0);
-      _accelMagnitude = samples.reduce((a, b) => a + b) / samples.length;
-    });
+    _accelSub =
+        accelerometerEventStream(
+          samplingPeriod: SensorInterval.normalInterval,
+        ).listen((e) {
+          final mag = sqrt(e.x * e.x + e.y * e.y + e.z * e.z);
+          samples.add(mag);
+          if (samples.length > 20) samples.removeAt(0);
+          _accelMagnitude = samples.reduce((a, b) => a + b) / samples.length;
+        });
   }
 
   void _startLocationUpdates() {
-    _locationSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.balanced,
-        distanceFilter: 10,
-      ),
-    ).listen(
-      (pos) { _gpsSpeed = pos.speed.clamp(0, 50); _emitContext(); },
-      onError: (e) => _logger.w('GPS: $e'),
-    );
+    _locationSub =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.balanced,
+            distanceFilter: 10,
+          ),
+        ).listen((pos) {
+          _gpsSpeed = pos.speed.clamp(0, 50);
+          _emitContext();
+        }, onError: (e) => _logger.w('GPS: $e'));
   }
 
   void _emitContext() {
     final now = DateTime.now();
     final activity = _classifyActivity();
     final mood = _manualMoodOverride ?? _inferMood(activity, now.hour);
-    _contextController.add(ContextModel(
-      activity: activity,
-      gpsSpeed: _gpsSpeed,
-      accelerometerMag: _accelMagnitude,
-      hourOfDay: now.hour,
-      dayOfWeek: now.weekday,
-      isConnectedToWifi: true,
-      inferredMood: mood,
-    ));
+    _contextController.add(
+      ContextModel(
+        activity: activity,
+        gpsSpeed: _gpsSpeed,
+        accelerometerMag: _accelMagnitude,
+        hourOfDay: now.hour,
+        dayOfWeek: now.weekday,
+        isConnectedToWifi: true,
+        inferredMood: mood,
+      ),
+    );
   }
 
-  ActivityType _classifyActivity() {
-    if (_gpsSpeed > 7) return ActivityType.driving;
-    if (_gpsSpeed > 2.5 || _accelMagnitude > 14) return ActivityType.running;
-    if (_gpsSpeed > 0.5 || _accelMagnitude > 10.5) return ActivityType.walking;
-    if (_accelMagnitude < 9.9) return ActivityType.relaxing;
-    return ActivityType.working;
+  history.ActivityType _classifyActivity() {
+    if (_gpsSpeed > 7) return history.ActivityType.driving;
+    if (_gpsSpeed > 2.5 || _accelMagnitude > 14)
+      return history.ActivityType.running;
+    if (_gpsSpeed > 0.5 || _accelMagnitude > 10.5)
+      return history.ActivityType.walking;
+    if (_accelMagnitude < 9.9) return history.ActivityType.relaxing;
+    return history.ActivityType.working;
   }
 
-  MoodType _inferMood(ActivityType activity, int hour) {
+  history.MoodType _inferMood(history.ActivityType activity, int hour) {
     final isNight = hour >= 21 || hour < 6;
     final isMorning = hour >= 6 && hour < 10;
     switch (activity) {
-      case ActivityType.running: return MoodType.energetic;
-      case ActivityType.walking: return isMorning ? MoodType.energetic : MoodType.happy;
-      case ActivityType.driving: return MoodType.focus;
-      case ActivityType.working: return MoodType.focus;
-      case ActivityType.relaxing: return isNight ? MoodType.melancholic : MoodType.chill;
-      default: return MoodType.chill;
+      case history.ActivityType.running:
+        return history.MoodType.energetic;
+      case history.ActivityType.walking:
+        return isMorning ? history.MoodType.energetic : history.MoodType.happy;
+      case history.ActivityType.driving:
+        return history.MoodType.focus;
+      case history.ActivityType.working:
+        return history.MoodType.focus;
+      case history.ActivityType.relaxing:
+        return isNight ? history.MoodType.melancholic : history.MoodType.chill;
+      default:
+        return history.MoodType.chill;
     }
   }
 
-  void overrideMood(MoodType mood) {
+  void overrideMood(history.MoodType mood) {
     _manualMoodOverride = mood;
     _emitContext();
   }
