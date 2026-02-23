@@ -56,7 +56,7 @@ class SensorService {
     _locationSub =
         Geolocator.getPositionStream(
           locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.balanced,
+            accuracy: LocationAccuracy.medium,
             distanceFilter: 10,
           ),
         ).listen((pos) {
